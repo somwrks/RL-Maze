@@ -1,9 +1,12 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
+
 @app.route('/api/python', methods=['POST'])
 def handle_maze():
-    data = request.get_json()  # Get the JSON data from the request
+    data = request.get_json()
     if not data:
         return jsonify({"error": "Invalid input"}), 400
     
@@ -11,9 +14,6 @@ def handle_maze():
     starting = data.get('starting')
     ending = data.get('ending')
 
-    print("Maze:", maze)
-    print("Starting Point:", starting)
-    print("Ending Point:", ending)
 
     return jsonify({"status": "success", "message": "Data received"}), 200
 

@@ -82,9 +82,6 @@ export default function Home() {
     const newMaze = maze.map((row) =>
       row.map((cell) => (cell === 2 || cell === 3 ? 0 : cell))
     );
-    console.log("New Maze : ", newMaze)
-    console.log("starting point : ", starting)
-    console.log("ending point : ", ending)
 
     try {
       const response = await fetch('/api/python', {

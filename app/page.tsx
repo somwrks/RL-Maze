@@ -1,6 +1,7 @@
-'use client';
+"use client";
 import { useState } from "react";
 import { Button, ButtonGroup } from "@nextui-org/button";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
   const [maze, setMaze] = useState([
@@ -10,11 +11,13 @@ export default function Home() {
     [1, 1, 0, 1, 1],
     [0, 0, 0, 0, 0],
   ]);
-
+  const [reward, setReward] = useState(10);
+  const [wallpenalty, setWallpenalty] = useState(-10);
+  const [steppenalty, setSteppenalty] = useState(-1);
   const [carPosition, setCarPosition] = useState({ row: null, col: null });
   const [flagPosition, setFlagPosition] = useState({ row: null, col: null });
 
-  const handleCellClick = (rowIndex:any, cellIndex:any) => {
+  const handleCellClick = (rowIndex: any, cellIndex: any) => {
     const newMaze = maze.map((row, rIndex) =>
       row.map((cell, cIndex) => {
         if (rIndex === rowIndex && cIndex === cellIndex) {
@@ -26,7 +29,7 @@ export default function Home() {
     setMaze(newMaze);
   };
 
-  const handleDrop = (event :any, rowIndex:any, cellIndex:any) => {
+  const handleDrop = (event: any, rowIndex: any, cellIndex: any) => {
     event.preventDefault();
     const data = event.dataTransfer.getData("text");
 
@@ -62,14 +65,14 @@ export default function Home() {
     setMaze(newMaze);
   };
 
-  const handleDragOver = (event:any) => {
+  const handleDragOver = (event: any) => {
     event.preventDefault();
   };
 
-  const handleDragStart = (event :any, type:any) => {
+  const handleDragStart = (event: any, type: any) => {
     event.dataTransfer.setData("text", type);
   };
-
+  const router = useRouter();
   const handlesubmit = async () => {
     if (carPosition.row === null || flagPosition.row === null) {
       alert("Please set both the starting and ending points in the maze.");
@@ -84,25 +87,45 @@ export default function Home() {
     );
 
     try {
-      const response = await fetch('/api/python', {
-        method: 'POST',
+      const response = await fetch("/api/store", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ maze: newMaze, starting, ending }),
+        body: JSON.stringify({
+          maze: newMaze,
+          starting,
+          ending,
+          reward,
+          wallpenalty,
+          steppenalty,
+        }),
       });
 
       if (!response.ok) {
-        throw new Error('Network response was not ok');
+        throw new Error("Network response was not ok");
       }
 
       const result = await response.json();
       console.log(result);
+      const url = `/main?maze=${encodeURIComponent(JSON.stringify(maze))}`;
+      router.push(url);
+  
     } catch (error) {
-      console.error('There was a problem with the fetch operation:', error);
+      console.error("There was a problem with the fetch operation:", error);
     }
   };
-
+  
+  const checkMazeForTwo = (num:Number): boolean => {
+    for (const row of maze) {
+      for (const cell of row) {
+        if (cell === num) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
   return (
     <div className="flex text-white space-y-4 min-h-screen flex-col items-center w-full p-12">
       <div className="flex flex-col items-center w-full p-2">
@@ -124,38 +147,64 @@ export default function Home() {
                     : "bg-white relative"
                 } cursor-pointer`}
               >
-                {cell === 2 && <div className="absolute">🚗</div>}
-                {cell === 3 && <div className="absolute">🏁</div>}
+                {cell === 2 && <div className="absolute text-4xl">🚗</div>}
+                {cell === 3 && <div className="absolute  text-4xl">🏁</div>}
               </div>
             ))}
           </div>
         ))}
       </div>
-      <h1 className="text-3xl text-center text-white">
+      <h1 className="text-xl text-center text-white">
         Drag the car on to the block to make the starting point!
         <div
           draggable
           onDragStart={(event) => handleDragStart(event, "car")}
           className="cursor-pointer"
         >
-          🚗
+           {!checkMazeForTwo(2) && '🚗'}
         </div>
       </h1>
-      <h1 className="text-3xl text-center text-white">
+      <h1 className="text-xl text-center text-white">
         Drag the race flag on to the block to make the end point!
         <div
           draggable
           onDragStart={(event) => handleDragStart(event, "flag")}
           className="cursor-pointer"
         >
-          🏁
+           {!checkMazeForTwo(3) && '🏁'}
         </div>
       </h1>
+      <input
+        type="text"
+        required
+        value={reward}
+        multiple={false}
+        className="text-white bg-gray-900  p-2 text-xl text-center "
+        placeholder="Reward"
+        onChange={(e: any) => setReward(e.target.value)}
+        />
+      <input
+        type="text"
+        className="text-white bg-gray-900  p-2 text-xl text-center"
+        required
+        value={wallpenalty}
+        placeholder="Wall Penalty"
+        onChange={(e: any) => setWallpenalty(e.target.value)}
+        />
+      <input
+        type="text"
+        className="text-white bg-gray-900  p-2 text-xl text-center"
+        required
+        value={steppenalty}
+        placeholder="Step Penalty"
+        onChange={(e: any) => setSteppenalty(e.target.value)}
+      />
       <Button
+      
         onClick={handlesubmit}
         size="lg"
         color="primary"
-        className="p-4 text-2xl"
+        className="p-4 border text-xl"
       >
         Start
       </Button>

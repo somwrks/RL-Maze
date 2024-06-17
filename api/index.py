@@ -1,6 +1,13 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+
 import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
+
+from io import BytesIO
+import base64
+
 
 class Maze:
     def __init__(self, maze, start_position, end_position):
@@ -42,6 +49,11 @@ def finish_episode(agent, maze, current_episode, train=True):
     episode_reward = 0
     episode_step = 0
     path = [current_state]
+    global text_logs, maze_layout, starting, ending 
+    if not train:
+        text_logs.append(f"Starting episode {current_episode + 1} at position {current_state}")
+        text_logs.append(f"Maze setup :\nMaze layout : {maze_layout.tolist()}\nStarting point : {starting}\nEnding point : {ending}\nWall Penalty : {wall_penalty}\nStep Penalty : {step_penalty}\nGoal Reward : {goal_reward}\nTrain EPOCH : {train_epochs}\nTest EPOCH : {test_epochs}")
+        
 
     while not is_done:
         action = agent.get_action(current_state, current_episode)
@@ -53,9 +65,13 @@ def finish_episode(agent, maze, current_episode, train=True):
             path.append(next_state)
             reward = goal_reward
             is_done = True
+            if not train:
+                text_logs.append(f"Reached goal at position {next_state} with reward {reward}")
         else:
             path.append(next_state)
             reward = step_penalty
+            if not train:
+                text_logs.append(f"Moved to position {next_state} with reward {reward}")
 
         episode_reward += reward
         episode_step += 1
@@ -65,16 +81,66 @@ def finish_episode(agent, maze, current_episode, train=True):
 
         current_state = next_state
 
+    if  not train :
+        setText(text_logs)
     return episode_reward, episode_step, path
 
-def test_agent(agent, maze, epochs=1):
+def test_agent(agent, maze, epochs):
     episode_reward, episode_step, path = finish_episode(agent, maze, epochs, train=False)
+    if plt.gcf().get_axes():
+        plt.cla()
+    plt.figure(figsize=(5,5))
+    plt.imshow(maze.maze, cmap='gray')  # Correct usage
+    
+    plt.text(maze.start_position[0], maze.start_position[1], 'S', ha="center", va='center',color='red',fontsize=20)
+    plt.text(maze.end_position[0], maze.end_position[1], 'G', ha="center", va='center',color='green',fontsize=20)
+    
+    for position in path:
+        plt.text(position[0], position[1],"#",va="center",color="blue",fontsize=20)
+    
+    plt.xticks([])
+    plt.yticks([])
+    plt.grid(color='black',linewidth=2)
+    plt.show()
+    plt.savefig('test_temp.png', format='png', bbox_inches='tight')
     return episode_step, episode_reward, path
 
-def train_agent(agent, maze, epochs=100):
+def train_agent(agent, maze, epochs):
+    episode_rewards = []
+    episode_steps = []
+    
     for episode in range(epochs):
-        finish_episode(agent, maze, episode, train=True)
-
+        episode_reward, episode_step, path = finish_episode(agent, maze, episode, train=True)
+        
+        episode_rewards.append(episode_reward)
+        episode_steps.append(episode_step)
+        
+    plt.figure(figsize=(10,5))
+    plt.subplot(1,2,1)
+    plt.plot(episode_rewards)
+    plt.xlabel("episode")
+    plt.ylabel("cumulative reward")
+    plt.title("reward per episode")
+    average_reward = sum(episode_rewards) / len(episode_rewards)
+    print(f"the average reward is : {average_reward}")
+    plt.subplot(1,2,2)
+    plt.plot(episode_steps)
+    plt.xlabel("Episode")
+    plt.ylabel("Steps taken")
+    plt.ylim(0,100)
+    plt.title("Steps per episode")
+    
+    average_steps = sum(episode_steps) / len(episode_steps)
+    print(f"The average steps is : {average_steps}")
+    
+    plt.tight_layout()
+    plt.show()
+    
+    plt.savefig('train_temp.png', format='png', bbox_inches='tight')
+    # Add the "Trained Agent on EPOCHS" message after training is complete
+    global text_logs
+    text_logs.append(f"Trained Agent on EPOCHS = {train_epochs}")
+    setText(text_logs)
 def setlog(path):
     global log
     log = path
@@ -82,9 +148,17 @@ def setlog(path):
 def getlog():
     return log
 
+def setText(path):
+    global text
+    text = path
+
+def gettext():
+    return text
+
 actions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
 log = []
-
+text = []
+text_logs=[]
 app = Flask(__name__)
 CORS(app)
 
@@ -94,18 +168,25 @@ def handle_maze():
     if not data:
         return jsonify({"error": "Invalid input"}), 400
 
-    global maze, agent, goal_reward, wall_penalty, step_penalty
+    global maze, agent, goal_reward, wall_penalty, step_penalty, train_epochs, test_epochs, maze_layout,starting,ending
 
-    maze_layout = np.array(data.get('maze'))
-    starting = tuple(data.get('starting'))
-    ending = tuple(data.get('ending'))
-    goal_reward = data.get('reward')
-    wall_penalty = data.get('wallpenalty')
-    step_penalty = data.get('steppenalty')
+    try:
+        maze_layout = np.array(data.get('maze'))
+        starting = tuple(data.get('starting'))
+        ending = tuple(data.get('ending'))
+        goal_reward = int(data.get('reward'))
+        wall_penalty = int(data.get('wallpenalty'))
+        step_penalty = int(data.get('steppenalty'))
+        train_epochs = int(data.get('train_epoch'))
+        test_epochs = int(data.get('test_epoch'))
+    except (TypeError, ValueError) as e:
+        return jsonify({"error": "Invalid input types", "details": str(e)}), 400
 
     maze = Maze(maze_layout, starting, ending)
     agent = Agent(maze)
-
+    # global text_logs
+    # text_logs.append(f"Maze setup :\nMaze layout : {maze_layout.tolist()}\nStarting point : {starting}\nEnding point : {ending}\nWall Penalty : {wall_penalty}\nStep Penalty : {step_penalty}\nGoal Reward : {goal_reward}\nTrain EPOCH : {train_epochs}\nTest EPOCH : {test_epochs}")
+    # setText(text_logs)
 
     return jsonify({"status": "success", 
                     "maze_layout": maze_layout.tolist(),
@@ -114,25 +195,85 @@ def handle_maze():
                     "goal_reward": goal_reward,
                     "wall_penalty": wall_penalty,
                     "step_penalty": step_penalty,
-                    }), 200
+                    "train_epochs": train_epochs,
+                    "test_epochs": test_epochs}), 200
     
 @app.route('/api/train', methods=['POST'])
 def train_maze():
-    global agent, maze
-    train_agent(agent, maze, epochs=30)
+    global agent, maze, train_epochs
+    if train_epochs is None:
+        return jsonify({"error": "Training epochs not set"}), 400
+
+    train_agent(agent, maze, train_epochs)
+    global text_logs
+    text_logs.append(f"Trained Agent on EPOCHS = {train_epochs}")
+    setText(text_logs)
     return jsonify({"status": "success", "message": "Training completed"}), 200
 
 @app.route('/api/test', methods=['POST'])
-def test_maze():
-    global agent, maze
-    steps, reward, path = test_agent(agent, maze, epochs=1)
+def  test_maze():
+    global agent, maze, test_epochs
+    if test_epochs is None:
+        return jsonify({"error": "Testing epochs not set"}), 400
+
+    steps, reward, path = test_agent(agent, maze, test_epochs)
     setlog(path)
+    global text_logs
+    text_logs.append(f"Total Number of Steps :  {steps}")
+    text_logs.append(f"Total Reward :  {reward}")
+    setText(text_logs)
     return jsonify({"status": "success", "message": "Test completed", "steps": steps, "reward": reward}), 200
 
 @app.route('/api/getlogs', methods=['GET'])
 def get_log():
     logs = getlog()
     return jsonify({"status": "success", "log": logs}), 200
+
+@app.route('/api/gettext', methods=['GET'])
+def get_text():
+    global text
+    if text:
+        return jsonify({"status": "success", "text": text.pop(0)}), 200
+    else:
+        return jsonify({"status": "success", "text": ""}), 200
+@app.route('/api/getimage', methods=['GET'])
+def get_image():
+    img_type = request.args.get('type', 'test')  # Default to 'test' if no type is provided
+
+    if img_type == 'train':
+        img_file = 'train_temp.png'
+    else:
+        img_file = 'test_temp.png'
+
+    try:
+        with open(img_file, 'rb') as f:
+            img_data = f.read()
+    except FileNotFoundError:
+        return jsonify({"status": "error", "message": "Image file not found"}), 404
+
+    img_base64 = base64.b64encode(img_data).decode('utf-8')
+
+    return jsonify({"status": "success", "image": img_base64}), 200
+
+@app.route('/api/getalltexts', methods=['GET'])
+def get_all_texts():
+    global text
+    all_texts = []
+    while text:
+        all_texts.append(text.pop(0))
+    return jsonify({"status": "success", "texts": all_texts}), 200
+
+@app.route('/api/getallimages', methods=['GET'])
+def get_all_images():
+    try:
+        with open('train_temp.png', 'rb') as f_train:
+            train_img_data = base64.b64encode(f_train.read()).decode('utf-8')
+        with open('test_temp.png', 'rb') as f_test:
+            test_img_data = base64.b64encode(f_test.read()).decode('utf-8')
+    except FileNotFoundError:
+        return jsonify({"status": "error", "message": "Image file not found"}), 404
+
+    return jsonify({"status": "success", "train_image": train_img_data, "test_image": test_img_data}), 200
 
 if __name__ == '__main__':
     app.run(debug=True)

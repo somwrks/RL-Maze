@@ -25,7 +25,7 @@ export default function RootLayout({
                 RL-Maze  
               </div>
               <div className="flex text-center text-2xl flex-col">
-                 Car Maze Simulation
+                 Reinforcement Agent Simulation
               </div>
 
               </div>

@@ -1,3 +1,14 @@
+![Screenshot 2024-06-17 225828](https://github.com/somwrks/RL-Maze/assets/85481905/8576bc64-63be-40b7-bed3-332e47ebb367)
+
+
+![Screenshot 2024-06-17 225617](https://github.com/somwrks/RL-Maze/assets/85481905/8fecc84d-d91a-465f-baea-2e50f72f4370)
+
+![Screenshot 2024-06-17 225657](https://github.com/somwrks/RL-Maze/assets/85481905/41f11b44-f18b-450f-9e16-caf492a10366)
+
+
+![gif](https://github.com/somwrks/RL-Maze/assets/85481905/411b98b3-c613-4ce2-9e2f-170e44c133f0)
+
+
 # RL-Maze Simulation
 
 This project is a Reinforcement Learning (RL) simulation project built with a combination of Next.js, Flask, Tailwind CSS, and OpenCV. The purpose is to provide an educational platform for machine learning enthusiasts, allowing them to learn about RL by building their own mazes and training AI agents to solve them.  

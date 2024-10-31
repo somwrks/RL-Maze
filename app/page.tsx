@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { SignOutButton } from "@clerk/nextjs";
 
 export default function Home() {
-  
   const [maze, setMaze] = useState([
     [0, 1, 0, 0, 0],
     [0, 1, 1, 1, 0],
@@ -21,7 +20,7 @@ export default function Home() {
   const [carPosition, setCarPosition] = useState({ row: null, col: null });
   const [flagPosition, setFlagPosition] = useState({ row: null, col: null });
 
-  const handleCellClick = (rowIndex:any, cellIndex:any) => {
+  const handleCellClick = (rowIndex: any, cellIndex: any) => {
     const newMaze = maze.map((row, rIndex) =>
       row.map((cell, cIndex) => {
         if (rIndex === rowIndex && cIndex === cellIndex) {
@@ -33,7 +32,7 @@ export default function Home() {
     setMaze(newMaze);
   };
 
-  const handleDrop = (event:any, rowIndex:any, cellIndex:any) => {
+  const handleDrop = (event: any, rowIndex: any, cellIndex: any) => {
     event.preventDefault();
     const data = event.dataTransfer.getData("text");
 
@@ -69,11 +68,11 @@ export default function Home() {
     setMaze(newMaze);
   };
 
-  const handleDragOver = (event:any) => {
+  const handleDragOver = (event: any) => {
     event.preventDefault();
   };
 
-  const handleDragStart = (event:any, type:any) => {
+  const handleDragStart = (event: any, type: any) => {
     event.dataTransfer.setData("text", type);
   };
 
@@ -111,7 +110,7 @@ export default function Home() {
       });
 
       if (!response.ok) {
-        console.log(response)
+        console.log(response);
         throw new Error("Network response was not ok");
       }
 
@@ -124,7 +123,7 @@ export default function Home() {
     }
   };
 
-  const checkMazeForTwo = (num:any) => {
+  const checkMazeForTwo = (num: any) => {
     for (const row of maze) {
       for (const cell of row) {
         if (cell === num) {
@@ -164,7 +163,7 @@ export default function Home() {
           ))}
         </div>
         <h1 className="text-xl text-center text-white">
-        Toggle the blocks to define paths
+          Toggle the blocks to define paths
         </h1>
         <h1 className="text-xl text-center text-white">
           Drag the car on to the block to make the starting point!
@@ -186,14 +185,9 @@ export default function Home() {
             {!checkMazeForTwo(3) && "🏁"}
           </div>
         </h1>
-
       </div>
 
-
-
       <div className="flex flex-col  text-xl w-1/2 space-y-4">
-        
-        
         <label htmlFor="reward">Reward</label>
         <input
           type="text"
@@ -240,7 +234,7 @@ export default function Home() {
           placeholder="test_epoch"
           onChange={(e: any) => setTest_epoch(e.target.value)}
         />
-        
+
         <Button
           onClick={handlesubmit}
           size="lg"
@@ -250,14 +244,9 @@ export default function Home() {
           Start
         </Button>
         <SignOutButton>
-        <Button
-          size="lg"
-          color="primary"
-          className="p-4 border text-xl"
-        >
-          Logout
-        </Button>
-
+          <Button size="lg" color="primary" className="p-4 border text-xl">
+            Logout
+          </Button>
         </SignOutButton>
       </div>
     </div>

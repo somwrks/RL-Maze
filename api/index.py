@@ -241,6 +241,7 @@ def gettext():
 
 @app.route('/api/store', methods=['POST'])
 def handle_maze():
+    print("input recieved")
     data = request.get_json()
     if not data:
         return jsonify({"error": "Invalid input"}), 400
@@ -261,8 +262,8 @@ def handle_maze():
 
     maze = Maze(maze_layout, starting, ending)
     agent = Agent(maze)
-    
-
+    print("Agent", agent)
+    print ("Maze", maze)
     return jsonify({"status": "success", 
                     "maze_layout": maze_layout.tolist(),
                     "starting": starting,
